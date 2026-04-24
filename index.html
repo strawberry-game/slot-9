@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>9マススロットゲーム SVG版</title>
+  <title>9マススロットゲーム PNG版</title>
   <style>
     :root{
       --bg1:#120f2b; --bg2:#26194a; --panel:#1c1739ee; --panel-line:#ffffff22;
@@ -89,7 +89,7 @@
     .reel::before{top:0;background:linear-gradient(180deg,rgba(0,0,0,.15),transparent)}
     .reel::after{bottom:0;background:linear-gradient(0deg,rgba(0,0,0,.15),transparent)}
     .symbol{position:relative;z-index:2;transform:translateY(0);width:72px;height:72px;display:flex;align-items:center;justify-content:center}
-    .symbol svg{width:72px;height:72px;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))}
+    .symbol img{width:72px;height:72px;display:block;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18));user-select:none;pointer-events:none}
     .spinning .symbol{animation:spinBounce .1s linear infinite}
     @keyframes spinBounce{0%{transform:translateY(-6px) scale(1)}50%{transform:translateY(6px) scale(1.04)}100%{transform:translateY(-6px) scale(1)}}
     .win-glow{animation:winGlow .8s ease-in-out infinite alternate}
@@ -128,7 +128,7 @@
     @keyframes machinePulse{0%{filter:brightness(1)}50%{filter:brightness(1.15)}100%{filter:brightness(1)}}
     @media (max-width:980px){.slot-layout{grid-template-columns:1fr}.side-panel{order:-1}}
     @media (max-width:820px){.status-grid{grid-template-columns:repeat(2,1fr)} .controls{grid-template-columns:1fr 1fr} .btn-main{grid-column:1 / -1}.history-item{grid-template-columns:1fr}.result-banner.jackpot{font-size:28px}.result-banner.win{font-size:22px}}
-    @media (max-width:560px){.wrap{padding:16px 12px 28px}.machine{padding:16px}.reels{gap:10px}.reel{height:96px;border-radius:14px}.symbol{width:52px;height:52px}.symbol svg{width:52px;height:52px}.controls{grid-template-columns:1fr}.status-value{font-size:24px}.message{font-size:16px}.result-banner{min-width:180px;padding:12px 16px}.result-banner.jackpot{font-size:24px}.result-banner.win{font-size:20px}}
+    @media (max-width:560px){.wrap{padding:16px 12px 28px}.machine{padding:16px}.reels{gap:10px}.reel{height:96px;border-radius:14px}.symbol{width:52px;height:52px}.symbol img{width:52px;height:52px}.controls{grid-template-columns:1fr}.status-value{font-size:24px}.message{font-size:16px}.result-banner{min-width:180px;padding:12px 16px}.result-banner.jackpot{font-size:24px}.result-banner.win{font-size:20px}}
     .site-footer{
       width:100%;
       margin-top:40px;
@@ -171,10 +171,13 @@
             <div class="paytable-box">
               <div class="paytable-title">1ラインごとの配当</div>
               <div class="paytable-list">
-                <div>SEVEN = ベット × 20</div>
-                <div>STAR = ベット × 10</div>
-                <div>BELL = ベット × 6</div>
-                <div>CHERRY = ベット × 4</div>
+                <div>7 自然揃い = ベット × 25</div>
+                <div>7 + 天使ワイルド = ベット × 12</div>
+                <div>天使3つ = ベット × 12</div>
+                <div>ベル / ダイヤ 自然揃い = ベット × 8</div>
+                <div>ベル / ダイヤ + 天使ワイルド = ベット × 4</div>
+                <div>果物 自然揃い = ベット × 4</div>
+                <div>果物 + 天使ワイルド = ベット × 2</div>
               </div>
             </div>
 
@@ -216,59 +219,49 @@
   </div>
 
   <script>
-    const SYMBOLS = ['cherry','bell','star','seven'];
+    const SYMBOLS = ['apple','cherry','lemon','grape','bell','diamond','angel','seven'];
     const SYMBOL_LABELS = {
-      cherry:'CHERRY',
-      bell:'BELL',
-      star:'STAR',
-      seven:'SEVEN'
+      apple:'りんご',
+      cherry:'チェリー',
+      lemon:'レモン',
+      grape:'ぶどう',
+      bell:'ベル',
+      diamond:'ダイヤモンド',
+      angel:'天使',
+      seven:'7'
     };
-    const STORAGE_KEY = 'apps_script_slot_game_3x3_svg_v1';
+    const SYMBOL_IMAGES = {
+      apple:'https://i.imgur.com/KA2nJjf.png',
+      cherry:'https://i.imgur.com/8mGqHuK.png',
+      lemon:'https://i.imgur.com/0vyH8Uw.png',
+      grape:'https://i.imgur.com/Q3OHBsg.png',
+      bell:'https://i.imgur.com/FRVpPVY.png',
+      diamond:'https://i.imgur.com/0mu2hGQ.png',
+      angel:'https://i.imgur.com/GUUxoIr.png',
+      seven:'https://i.imgur.com/nWKGwoM.png'
+    };
+    const STORAGE_KEY = 'apps_script_slot_game_3x3_png_v3';
+    const COIN_MAX = 999999;
+    const BET_MIN = 10;
+    const BET_MAX = 100;
+    const BET_STEP = 10;
     const LINES = [
       { name:'横1段目', cells:[0,1,2] }, { name:'横2段目', cells:[3,4,5] }, { name:'横3段目', cells:[6,7,8] },
       { name:'縦左', cells:[0,3,6] }, { name:'縦中央', cells:[1,4,7] }, { name:'縦右', cells:[2,5,8] },
       { name:'斜め左上→右下', cells:[0,4,8] }, { name:'斜め右上→左下', cells:[2,4,6] }
     ];
 
-    let state = { coins:200, bet:10, playCount:0, bestWin:0, history:[] };
+    let state = { coins:200, bet:BET_MIN, playCount:0, bestWin:0, history:[] };
     let isSpinning = false;
     let spinTimers = new Array(9).fill(null);
 
-    function getSymbolSvg(type){
-      const svgMap = {
-        cherry:`
-          <svg viewBox="0 0 100 100" aria-label="CHERRY" role="img">
-            <path d="M52 28 C50 17,58 8,72 8" fill="none" stroke="#2d8b42" stroke-width="6" stroke-linecap="round"/>
-            <path d="M48 28 C46 17,38 10,26 10" fill="none" stroke="#2d8b42" stroke-width="6" stroke-linecap="round"/>
-            <path d="M47 26 C55 19,64 17,75 19" fill="none" stroke="#3fae57" stroke-width="4" stroke-linecap="round"/>
-            <ellipse cx="34" cy="62" rx="18" ry="20" fill="#e83c5a"/>
-            <ellipse cx="66" cy="62" rx="18" ry="20" fill="#d82549"/>
-            <circle cx="28" cy="56" r="6" fill="rgba(255,255,255,.35)"/>
-            <circle cx="60" cy="56" r="6" fill="rgba(255,255,255,.3)"/>
-          </svg>`,
-        bell:`
-          <svg viewBox="0 0 100 100" aria-label="BELL" role="img">
-            <path d="M50 18 C33 18,24 31,24 48 V60 L16 70 H84 L76 60 V48 C76 31,67 18,50 18Z" fill="#f4bf34" stroke="#c98909" stroke-width="4"/>
-            <rect x="43" y="11" width="14" height="10" rx="4" fill="#c98909"/>
-            <circle cx="50" cy="74" r="7" fill="#9a5d00"/>
-            <path d="M34 42 C40 37,60 37,66 42" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="5" stroke-linecap="round"/>
-          </svg>`,
-        star:`
-          <svg viewBox="0 0 100 100" aria-label="STAR" role="img">
-            <path d="M50 14 L59 38 L85 38 L64 53 L72 80 L50 64 L28 80 L36 53 L15 38 L41 38 Z" fill="#ffd84d" stroke="#d3a414" stroke-width="4" stroke-linejoin="round"/>
-            <circle cx="42" cy="36" r="5" fill="rgba(255,255,255,.4)"/>
-          </svg>`,
-        seven:`
-          <svg viewBox="0 0 100 100" aria-label="SEVEN" role="img">
-            <path d="M20 24 H80 L52 84 H34 L58 36 H20 Z" fill="#e74a4a" stroke="#b91818" stroke-width="5" stroke-linejoin="round"/>
-            <path d="M28 28 H72" stroke="rgba(255,255,255,.45)" stroke-width="5" stroke-linecap="round"/>
-          </svg>`
-      };
-      return svgMap[type] || svgMap.cherry;
+    function getSymbolImage(type){
+      return SYMBOL_IMAGES[type] || SYMBOL_IMAGES.apple;
     }
 
     function renderSymbol(element, type){
-      element.innerHTML = getSymbolSvg(type);
+      const label = SYMBOL_LABELS[type] || type;
+      element.innerHTML = '<img src="' + getSymbolImage(type) + '" alt="' + label + '" loading="eager" decoding="async">';
       element.dataset.symbol = type;
     }
 
@@ -279,8 +272,8 @@
       try{
         const parsed = JSON.parse(saved);
         state = {
-          coins:Number(parsed.coins ?? 200),
-          bet:Number(parsed.bet ?? 10),
+          coins:Math.min(COIN_MAX, Math.max(0, Number(parsed.coins ?? 200))),
+          bet:Math.min(BET_MAX, Math.max(BET_MIN, Number(parsed.bet ?? 10))),
           playCount:Number(parsed.playCount ?? 0),
           bestWin:Number(parsed.bestWin ?? 0),
           history:Array.isArray(parsed.history) ? parsed.history.slice(0,8) : []
@@ -305,13 +298,13 @@
     }
 
     function updateView(){
-      document.getElementById('coinsValue').textContent = state.coins;
+      document.getElementById('coinsValue').textContent = state.coins.toLocaleString('ja-JP');
       document.getElementById('betValueCard').textContent = state.bet;
       document.getElementById('betValueInline').textContent = state.bet;
       document.getElementById('playCountValue').textContent = state.playCount;
-      document.getElementById('bestWinValue').textContent = state.bestWin;
+      document.getElementById('bestWinValue').textContent = state.bestWin.toLocaleString('ja-JP');
       document.getElementById('minusBtn').disabled = isSpinning || state.bet <= 10;
-      document.getElementById('plusBtn').disabled = isSpinning || state.bet >= 50 || state.bet >= state.coins;
+      document.getElementById('plusBtn').disabled = isSpinning || state.bet >= BET_MAX || state.bet >= state.coins;
       document.getElementById('maxBtn').disabled = isSpinning || state.coins < 10;
       document.getElementById('spinBtn').disabled = isSpinning || state.coins < state.bet;
       renderHistory();
@@ -362,12 +355,27 @@
       reel.classList.remove('spinning');
     }
 
-    function getLinePayout(symbol, bet){
-      if(symbol === 'seven') return bet * 20;
-      if(symbol === 'star') return bet * 10;
-      if(symbol === 'bell') return bet * 6;
-      if(symbol === 'cherry') return bet * 4;
+    function getLinePayout(symbol, bet, usedWild){
+      if(symbol === 'angel') return bet * 12;
+      if(symbol === 'seven') return bet * (usedWild ? 12 : 25);
+      if(symbol === 'bell' || symbol === 'diamond') return bet * (usedWild ? 4 : 8);
+      if(symbol === 'apple' || symbol === 'cherry' || symbol === 'lemon' || symbol === 'grape') return bet * (usedWild ? 2 : 4);
       return 0;
+    }
+
+    function resolveLine(lineSymbols){
+      const normalSymbols = lineSymbols.filter(function(symbol){ return symbol !== 'angel'; });
+      const angelCount = lineSymbols.length - normalSymbols.length;
+
+      if(angelCount === 3){
+        return { matched:'angel', usedWild:false };
+      }
+
+      if(normalSymbols.length > 0 && normalSymbols.every(function(symbol){ return symbol === normalSymbols[0]; })){
+        return { matched:normalSymbols[0], usedWild:angelCount > 0 };
+      }
+
+      return null;
     }
 
     function evaluateGrid(symbols, bet){
@@ -377,12 +385,12 @@
 
       LINES.forEach(function(line){
         const lineSymbols = line.cells.map(function(index){ return symbols[index]; });
-        if(lineSymbols[0] === lineSymbols[1] && lineSymbols[1] === lineSymbols[2]){
-          const matched = lineSymbols[0];
-          const payout = getLinePayout(matched, bet);
+        const resolved = resolveLine(lineSymbols);
+        if(resolved){
+          const payout = getLinePayout(resolved.matched, bet, resolved.usedWild);
           totalWin += payout;
           line.cells.forEach(function(cellIndex){ hitCells.add(cellIndex); });
-          hitLines.push({ name:line.name, symbol:matched, payout:payout });
+          hitLines.push({ name:line.name, symbol:resolved.matched, payout:payout, usedWild:resolved.usedWild });
         }
       });
 
@@ -394,10 +402,11 @@
         type = 'win';
         title = hitLines.length + 'ライン当たりです。';
         detail = hitLines.map(function(hit){
-          return hit.name + '：' + SYMBOL_LABELS[hit.symbol] + ' × 3 → +' + hit.payout;
+          const wildText = hit.usedWild ? '（天使ワイルド含む）' : '';
+          return hit.name + '：' + SYMBOL_LABELS[hit.symbol] + ' × 3' + wildText + ' → +' + hit.payout;
         }).join('\n');
-        const jackpotLineExists = hitLines.some(function(hit){ return hit.symbol === 'seven'; });
-        if(jackpotLineExists || totalWin >= bet * 40){
+        const jackpotLineExists = hitLines.some(function(hit){ return hit.symbol === 'seven' && !hit.usedWild; });
+        if(jackpotLineExists || totalWin >= bet * 50){
           type = 'jackpot';
           title = '大当たりです。' + hitLines.length + 'ライン成立しました。';
         }
@@ -497,7 +506,7 @@
           stopVisual(i, finalSymbols[i]);
           if(i === 8){
             const result = evaluateGrid(finalSymbols, currentBet);
-            state.coins += result.win;
+            state.coins = Math.min(COIN_MAX, state.coins + result.win);
             if(result.win > state.bestWin) state.bestWin = result.win;
             if(result.win > 0){
               highlightWins(result.hitCells);
@@ -521,24 +530,24 @@
     function changeBet(diff){
       if(isSpinning) return;
       const next = state.bet + diff;
-      if(next < 10 || next > 50 || next > state.coins) return;
+      if(next < BET_MIN || next > BET_MAX || next > state.coins) return;
       state.bet = next;
       updateView();
     }
 
     function maxBet(){
-      if(isSpinning || state.coins < 10) return;
-      const max = Math.min(50, Math.floor(state.coins / 10) * 10);
-      state.bet = Math.max(10, max);
+      if(isSpinning || state.coins < BET_MIN) return;
+      const max = Math.min(BET_MAX, Math.floor(state.coins / BET_STEP) * BET_STEP);
+      state.bet = Math.max(BET_MIN, max);
       updateView();
     }
 
     function resetGame(){
       if(isSpinning) return;
-      state = { coins:200, bet:10, playCount:0, bestWin:0, history:[] };
+      state = { coins:200, bet:BET_MIN, playCount:0, bestWin:0, history:[] };
       clearHighlights();
       document.getElementById('coinRain').innerHTML = '';
-      const initial = ['cherry','bell','star','seven','cherry','bell','star','seven','cherry'];
+      const initial = ['apple','cherry','lemon','grape','bell','diamond','angel','seven','apple'];
       initial.forEach(function(symbol, index){
         renderSymbol(document.getElementById('symbol' + index), symbol);
       });
